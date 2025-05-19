@@ -64,21 +64,20 @@ class HelloAssoMembersAPI:
         raw_response = requests.get(url, headers=headers, params=params)  # retrieve page 1
         if raw_response.ok:
             response = raw_response.json()
-            first_page = int(response["pagination"]["pageIndex"])
-            last_page = min(self.max_pages, int(response["pagination"]["totalPages"]))
             members: list = response["data"]
-            print("Received,", len(response["data"]), "members from page", response["pagination"]["pageIndex"], "over", response["pagination"]["totalPages"])
-            for _ in list(range(first_page, last_page)):
+            print("Received,", len(response["data"]), "members from the first page")
+            for _ in list(range(self.max_pages)):
                 params["pageIndex"] += 1
                 raw_response = requests.get(url, headers=headers, params=params)  # retrieve page 2 and above
                 if raw_response.ok:
                     response = raw_response.json()
                     members.extend(response["data"])
-                    print("Received,", len(response["data"]), f"members from page {response['pagination']['pageIndex']}/{response['pagination']['totalPages']}")
+                    print("Received,", len(response["data"]), "members from a new page")
                 else:
-                    raise IOError(f"Retrieving page failed with HTTP error {raw_response.status_code} from HelloAsso")
+                    print(f"Stopping HelloAsso downloading due to HTTP code {raw_response.status_code} from HelloAsso")
+                    break
             return members
-        print(f"Failed to get HelloAsso members:", raw_response.text)
+        raise IOError(f"Failed to get HelloAsso members, HelloAsso returned HTTP error {raw_response.status_code}")
 
     def save_to_json(self, all_our_members: list[HelloAssoMemberEntry]):
         with open("all_our_members.json", "w") as f:
